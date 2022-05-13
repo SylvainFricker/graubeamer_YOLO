@@ -1,0 +1,10 @@
+
+python mot_YOLOv3_b_dete_on_input_for_CT.py -v ./../video_data/ilanz_short_1_2fps.mp4
+
+
+[INFO] für Error mit nicht finden von update und update2 
+	
+	in:
+		\motrackers\centroid_kf_tracker.py
+
+	die nicht gefunde Funktion auskommentieren und die andere einkommentieren

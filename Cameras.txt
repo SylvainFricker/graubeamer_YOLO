@@ -1,0 +1,19 @@
+Subnet 255.255.0.0/16
+Default 192.168.0.1
+
+Admin:
+ - Username -> grauAdmin
+ - Passwort -> GrauAdmin10
+
+Camera1: Gabriel
+ - IP -> 192.168.0.11
+ - Username -> graubeamer
+ - Passwort -> Autokino22
+
+Camera2: Leo
+ - IP -> 192.168.0.12
+ - Username -> graubeamer
+ - Passwort -> Autokino22
+
+PC:
+ - IP -> 192.168.0.10
