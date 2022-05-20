@@ -37,7 +37,7 @@ Pip install for OpenCV (version 3.4.3 or later) is available [here](https://pypi
 git clone https://github.com/adipandas/multi-object-tracker
 cd multi-object-tracker
 pip install -r requirements.txt
-pip install -e .
+pip install -e ./motrackers
 ```
 
 **Note - for using neural network models with GPU**  
