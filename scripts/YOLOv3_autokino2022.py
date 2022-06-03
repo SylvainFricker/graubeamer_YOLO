@@ -6,6 +6,7 @@ from motrackers import CentroidTracker, CentroidKF_Tracker, KFTracker2D
 from motrackers.utils import draw_tracks
 from motrackers.utils import corners_to_points
 from motrackers import Transform
+from motrackers import Helper
 
 import argparse
 
@@ -120,6 +121,8 @@ def click_event(event, x, y, flags, params):
         cv.circle(one_frame_2,(x, y), 4, (120, 255, 2), -1)
         cv.imshow('one_frame_2', one_frame_2)
 
+
+
 """ Video Capture Settings"""
 
 #for IP cameras
@@ -127,6 +130,18 @@ camera_IP1 = '192.168.0.11'
 camera_IP2 = '192.168.0.12'
 cap_1 = cv.VideoCapture('http://graubeamer:Autokino22@{}/cgi-bin/mjpeg?stream=[1]'.format(camera_IP1))
 cap_2 = cv.VideoCapture('http://graubeamer:Autokino22@{}/cgi-bin/mjpeg?stream=[1]'.format(camera_IP2))
+
+#buffer size does not work
+#cap_1.set(cv.CAP_PROP_BUFFERSIZE, 1)
+#cap_2.set(cv.CAP_PROP_BUFFERSIZE, 1)
+
+
+# size of captured image, check camera pixels, should be 1280/720
+frame_size = (640, 360)
+
+# Size of parking lot
+plane_size_davos = [500,800,3]
+plane_size_parpan = [500,800,3]
 
 """
 #for videos
@@ -141,9 +156,9 @@ status,one_frame_2 = cap_2.read()
 
 
 """Initialize projection planes, one with all boxes, one with merged boxes only"""
-white_plane_1 = np.zeros([500,800,3],dtype=np.uint8)
+white_plane_1 = np.zeros(plane_size_davos, dtype=np.uint8)
 white_plane_1.fill(255)
-white_plane_2 = np.zeros([500,800,3],dtype=np.uint8)
+white_plane_2 = np.zeros(plane_size_davos, dtype=np.uint8)
 white_plane_2.fill(255)
 
 
@@ -156,7 +171,7 @@ cv.waitKey(1)
 
 while(True):
     cv.imshow('one_frame_1', one_frame_1)
-    one_frame_1 = cv.resize(one_frame_1, (700,500))
+    one_frame_1 = cv.resize(one_frame_1, frame_size)
     one_frame_1 = Transform.put_Text(one_frame_1)
     if cv.waitKey(20) & 0xff == 27:
         #cv.destroyWindow('one_frame_1')
@@ -175,7 +190,7 @@ cv.waitKey(1)
 
 while(True):
     cv.imshow('one_frame_2', one_frame_2)
-    one_frame_2 = cv.resize(one_frame_2, (700,500))
+    one_frame_2 = cv.resize(one_frame_2, frame_size)
     one_frame_2 = Transform.put_Text_green(one_frame_2)
     if cv.waitKey(20) & 0xff == 27:
         cv.destroyWindow('one_frame_1')
@@ -187,22 +202,25 @@ click_corners_2 = np.int32(click_corners_2)
 rl_2,ll_2,rt_2,lt_2 = corners_to_points(click_corners_2)
 print("points_2",rl_2,ll_2,rt_2,lt_2)
 
+# release and renew videocapture for timing
+cap_1.release()
+cap_2.release()
+
+cap_1 = cv.VideoCapture('http://graubeamer:Autokino22@{}/cgi-bin/mjpeg?stream=[1]'.format(camera_IP1))
+cap_2 = cv.VideoCapture('http://graubeamer:Autokino22@{}/cgi-bin/mjpeg?stream=[1]'.format(camera_IP2))
 
 # saving video
 writer = None
 
 #start Detecting
 while True:
+    starttime = time.perf_counter()
+    image_1, image_2 = Helper.get_frame(cap_1, cap_2)
+    frame_time = time.perf_counter() - starttime
+    print(f'Frametime: {frame_time}')   
 
-    ok_1, image_1 = cap_1.read()
-    ok_2, image_2 = cap_2.read()
-
-    if not ok_1 and ok_2:
-        print("[INFO] Cannot read the video feed.")
-        break
-    # check camera pixels, should be 1920/1080
-    image_1 = cv.resize(image_1, (700,500))
-    image_2 = cv.resize(image_2, (700,500))
+    image_1 = cv.resize(image_1, frame_size)
+    image_2 = cv.resize(image_2, frame_size)
 
     #detection on image_1
     bboxes_1, confidences_1, class_ids_1 = model.detect(image_1,click_corners_1)
