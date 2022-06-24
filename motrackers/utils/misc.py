@@ -309,6 +309,7 @@ def get_PerspectiveMatrix(p1,p2,p3,p4):
     corners = np.float32([p1,p2,p3,p4])
     #pts2 = np.float32([[50,50],[850,50],[50,550],[850,550]])
     #pts2 = np.float32([[0,0],[800,0],[0,500],[800,500]])
+    # Adapt to plane size
     pts2 = np.float32([[50,50],[650,50],[50,350],[650,350]])
     #pts2 = np.float32([[0,0],[800,0],[0,400],[800,400]])
     M = cv.getPerspectiveTransform(corners,pts2)
@@ -316,7 +317,7 @@ def get_PerspectiveMatrix(p1,p2,p3,p4):
 
 
 def get_AffineTransformMatrix(p1,p2,p3):
-    srcTri = np.float32([p3, p1, p4])
+    srcTri = np.float32([p3, p1, p3])
     dstTri = np.float32( [[0,0], [800, 0], [0,800]])
     M = cv.getAffineTransform(srcTri, dstTri)
     return M

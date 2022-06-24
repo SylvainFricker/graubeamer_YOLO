@@ -1,4 +1,5 @@
 import time
+import cv2 as cv
 
 """Class with helper functions"""
 class Helper():
@@ -20,5 +21,88 @@ class Helper():
                     print("[INFO] Cannot read the video feed.")
                     break
 
-                return image_1, image_2 
+                return image_1, image_2
+
+    # put text on image
+    def put_Text_red(image):
+        cv.putText(image,'select 4 Points with LEFT MouseButton',(2,50), cv.FONT_HERSHEY_SIMPLEX,
+            0.7, (0, 0, 255), 2)
+        cv.putText(image,'Order: upper left, upper right, lower left, lower right',(2,90), cv.FONT_HERSHEY_SIMPLEX,
+            0.7, (0, 0, 255), 2)
+        cv.putText(image,'then press esc to close window (sometime 2x needed)',(2,130), cv.FONT_HERSHEY_SIMPLEX,
+            0.7, (0, 0, 255), 2)
+        cv.putText(image,'if you selected more then 4 restart the programm',(2,160), cv.FONT_HERSHEY_SIMPLEX,
+            0.5, (0, 0, 255), 2)
+        return image
+
+    def put_Text_green(image):
+        cv.putText(image,'select 4 Points with RIGHT MouseButton',(2,50), cv.FONT_HERSHEY_SIMPLEX,
+            0.7, (120, 255, 2), 2)
+        cv.putText(image,'Order:  upper left, upper right, lower left, lower right',(2,90), cv.FONT_HERSHEY_SIMPLEX,
+            0.7, (120, 255, 2), 2)
+        cv.putText(image,'then press esc to close window (sometime 2x needed)',(2,130), cv.FONT_HERSHEY_SIMPLEX,
+            0.7, (120, 255, 2), 2)
+        cv.putText(image,'if you selected more then 4 restart the programm',(2,160), cv.FONT_HERSHEY_SIMPLEX,
+            0.5, (120, 255, 2), 2)
+        return image
+
+    # draw points on images
+    def draw_points_red(image, points):
+        count=1
+        for point in points:
+            x = point[0].astype(int)
+            y = point[1].astype(int)
+            text = "ROI {}".format(count)
+            count += 1
+            #cv.putText(image, text, (x - 10, y - 10), cv.FONT_HERSHEY_SIMPLEX, 0.5, (200, 0, 200), 2)
+            cv.circle(image, (x, y), 4, (0, 0, 255), -1)
+        return image
+
+    def draw_points_green(image, points):
+        count=1
+        for point in points:
+            x = point[0].astype(int)
+            y = point[1].astype(int)
+            text = "ROI {}".format(count)
+            count += 1
+            #cv.putText(image, text, (x - 10, y - 10), cv.FONT_HERSHEY_SIMPLEX, 0.5, (200, 0, 200), 2)
+            cv.circle(image, (x, y), 4, (120, 255, 2), -1)
+        return image
+
+    #draw bboxes and centroids on images
+    def draw_centroid_bboxes_green(image, bboxes):
+        for bbox in bboxes:
+            x = (bbox[0]+ 0.5*bbox[2]).astype(int)
+            y = (bbox[1]+ 0.5*bbox[3]).astype(int)
+            cv.circle(image, (x, y), 4, (120, 255, 2), -1)
+        return image
+
+    def draw_bboxes_green(image, bboxes):
+        for bbox in bboxes:
+            #draw centroid
+            x = (bbox[0]+ 0.5*bbox[2]).astype(int)
+            y = (bbox[1]+ 0.5*bbox[3]).astype(int)
+            cv.circle(image, (x, y), 4, (120, 255, 2), -1)
+            #draw box
+            cv.rectangle(image,(int(bbox[0]),int(bbox[1])),(int(bbox[0]) + int(bbox[2]),int(bbox[1]) + int(bbox[3])),(120, 255, 2),4)
+        return image
+
+    def draw_centroid_bboxes_red(image, bboxes):
+        for bbox in bboxes:
+            x = (bbox[0]+ 0.5*bbox[2]).astype(int)
+            y = (bbox[1]+ 0.5*bbox[3]).astype(int)
+            cv.circle(image, (x, y), 4, (0, 0, 255), -1)
+        return image
+
+    def draw_bboxes_red(image, bboxes):
+        for bbox in bboxes:
+            #draw centroid
+            x = (bbox[0]+ 0.5*bbox[2]).astype(int)
+            y = (bbox[1]+ 0.5*bbox[3]).astype(int)
+            cv.circle(image, (x, y), 4, (0, 0, 255), -1)
+            #draw box
+            cv.rectangle(image,(int(bbox[0]),int(bbox[1])),(int(bbox[0]) + int(bbox[2]),int(bbox[1]) + int(bbox[3])),(0, 0, 255),4)
+        return image
+
+    
             
