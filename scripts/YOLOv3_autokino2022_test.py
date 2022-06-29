@@ -332,7 +332,7 @@ def run_yolo():
 
         #transformed_bboxes_2 = Transform.get_all4points_bboxes_transformed_with_bbox_scale(white_plane_2.copy() ,bboxes_2 ,M2 ,bbox_scale)
         transformed_bboxes_2, plane = Transform.get_all4points_bboxes_transformed_with_bbox_scale(plane ,bboxes_2 ,M2 ,bbox_scale, image_2)
-        #transformed_bboxes_2 = Transform.perspective_transform_bbox(bboxes_2, M2, bbox_scale )
+        #transformed_bboxes_2 = Transform.perspective_transform_bbox(bboxes_2, M2, image_2.shape[0], image_2.shape[1])
 
         #white_plane_detections = Helper.draw_centroid_bboxes_green(white_plane_detections,transformed_bboxes_2)  
         white_plane_detections = Helper.draw_bboxes_green(white_plane_detections,transformed_bboxes_2) 
