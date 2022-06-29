@@ -5,6 +5,7 @@ import math as math
 import matplotlib.path as mplPath
 import itertools
 from scipy.spatial import distance
+from scipy import spatial
 from motrackers.utils import get_PerspectiveMatrix
 from motrackers.utils import Transform_Point
 from motrackers.utils.misc import get_corners_of_ROI_as_int
@@ -34,49 +35,49 @@ class Transform():
         return combined_class_ids
 
     #IN USE
-    def selected_join(box_1,box_2, threshold = 100, large_bbox_threshold = 50, margin = 0.5 ,bbox_scale = 1):
-        
-        if len(box_1) == 0:
-            join = box_2
+    def selected_join(box_1,box_2,threshold = 300):
+        if len(box_1) == 0 and len(box_2) == 0:
+            return np.empty((0,4))
+        elif len(box_1) == 0:
+            return box_2
         elif len(box_2) == 0:
-            join = box_1
-        else:
-            join = np.append(box_1,box_2,0)
-            join = join.tolist()
+            return box_1
+        else:     
+            join = np.empty((0, 4))
+            index_p1 = 0
+            distances = np.empty((0,3))
+            index_not_used_points_1 = list(range(len(box_1)))
+            index_not_used_points_2 = list(range(len(box_2)))  
 
-        for b2, b1 in itertools.combinations(join, 2):
-            p1 = [b1[0],b1[1]]
-            p2 = [b2[0],b2[1]]
-            x = large_bbox_threshold / bbox_scale
-            if b1[2] > x or b1[3] > x or b2[2] > x or b2[3] > x:
-                y = (b1[2]+b1[2]+b2[2]+b2[3]) / 4
-                if abs(distance.euclidean(p1,p2)) < threshold + margin*y:
-                    try:
-                        join.remove(b1)
-                    except:
-                        print("your boxjoin-threshold is to large") 
-                    try:   
-                        join.remove(b2)
-                    except:
-                        print("your boxjoin-threshold is to large")
-                    join.append([(b1[0]+b2[0]) / 2 , (b1[1]+b2[1]) / 2 , (b1[2]+b2[2]) / 2 , (b1[3]+b2[3]) / 2])
-                    print("joined a large box with threshold ",threshold + margin*y)
-                    print("\n")
-            else:
-                if abs(distance.euclidean(p1,p2)) < threshold:
-                    try:
-                        join.remove(b1)
-                    except:
-                        print("your boxjoin-threshold is to large") 
-                    try:   
-                        join.remove(b2)
-                    except:
-                        print("your boxjoin-threshold is to large")
-                    join.append([(b1[0]+b2[0]) / 2 , (b1[1]+b2[1]) / 2 , (b1[2]+b2[2]) / 2 , (b1[3]+b2[3]) / 2])
-                    print("\n")
-        output = np.int32(join)
-        output = np.unique(output,axis=0)
-        return output
+            for b1 in box_1:
+                p1 = [b1[0],b1[1]]
+                index_p2 = 0           
+                for b2 in box_2:
+                    p2 = [b2[0],b2[1]]
+                    dist = abs(distance.euclidean(p1,p2))
+                    x = [dist,index_p1,index_p2]
+                    distances = np.append(distances,[x],axis=0)
+                    index_p2 += 1
+                index_p1 += 1          
+            distances = distances[distances[:, 0].argsort()]
+
+            for i in distances:
+                if i[0] < threshold:
+                    if i[1] in index_not_used_points_1 and i[2] in index_not_used_points_2:
+                        joined_point = np.array([(box_1[int(i[1]),0]+box_2[int(i[2]),0]) / 2 ,(box_1[int(i[1]),1]+box_2[int(i[2]),1]) / 2 ,20 ,20])
+                        join = np.append(join,[joined_point],axis=0)              
+                        index_not_used_points_1.remove(int(i[1]))
+                        index_not_used_points_2.remove(int(i[2]))     
+
+            for j in index_not_used_points_1:
+                p1 = np.array([box_1.item(j,0),box_1.item(j,1),20,20])
+                join = np.append(join,[p1],axis=0)       
+
+            for k in index_not_used_points_2:
+                p2 = np.array([box_2.item(k,0),box_2.item(k,1),20,20])
+                join = np.append(join,[p2],axis=0)
+            join = np.int32(join)
+        return join
 
     # new function
     def perspective_transform_bbox(bboxes, M, bbox_scale):
@@ -219,6 +220,50 @@ class Transform():
         return [new_centroid_x, new_centroid_y]
 
     """
+    def selected_join(box_1,box_2, threshold = 100, large_bbox_threshold = 50, margin = 0.5 ,bbox_scale = 1):
+        
+        if len(box_1) == 0:
+            join = box_2
+        elif len(box_2) == 0:
+            join = box_1
+        else:
+            join = np.append(box_1,box_2,0)
+            join = join.tolist()
+
+        for b2, b1 in itertools.combinations(join, 2):
+            p1 = [b1[0],b1[1]]
+            p2 = [b2[0],b2[1]]
+            x = large_bbox_threshold / bbox_scale
+            if b1[2] > x or b1[3] > x or b2[2] > x or b2[3] > x:
+                y = (b1[2]+b1[2]+b2[2]+b2[3]) / 4
+                if abs(distance.euclidean(p1,p2)) < threshold + margin*y:
+                    try:
+                        join.remove(b1)
+                    except:
+                        print("your boxjoin-threshold is to large") 
+                    try:   
+                        join.remove(b2)
+                    except:
+                        print("your boxjoin-threshold is to large")
+                    join.append([(b1[0]+b2[0]) / 2 , (b1[1]+b2[1]) / 2 , (b1[2]+b2[2]) / 2 , (b1[3]+b2[3]) / 2])
+                    print("joined a large box with threshold ",threshold + margin*y)
+                    print("\n")
+            else:
+                if abs(distance.euclidean(p1,p2)) < threshold:
+                    try:
+                        join.remove(b1)
+                    except:
+                        print("your boxjoin-threshold is to large") 
+                    try:   
+                        join.remove(b2)
+                    except:
+                        print("your boxjoin-threshold is to large")
+                    join.append([(b1[0]+b2[0]) / 2 , (b1[1]+b2[1]) / 2 , (b1[2]+b2[2]) / 2 , (b1[3]+b2[3]) / 2])
+                    print("\n")
+        output = np.int32(join)
+        output = np.unique(output,axis=0)
+        return output
+
     def PerspectiveTransformation(input,p1,p2,p3,p4):
 
         corners = np.float32([p4,p3,p2,p1])
