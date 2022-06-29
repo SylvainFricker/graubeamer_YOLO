@@ -35,7 +35,7 @@ class Transform():
         return combined_class_ids
 
     #IN USE
-    def selected_join(box_1,box_2, threshold = 300, w_car, h_car):
+    def selected_join(box_1,box_2, w_car, h_car, threshold = 100):
         if len(box_1) == 0 and len(box_2) == 0:
             return np.empty((0,4))
         elif len(box_1) == 0:
