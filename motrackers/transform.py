@@ -35,7 +35,7 @@ class Transform():
         return combined_class_ids
 
     #IN USE
-    def selected_join(box_1,box_2,threshold = 300):
+    def selected_join(box_1,box_2, threshold = 300, w_car, h_car):
         if len(box_1) == 0 and len(box_2) == 0:
             return np.empty((0,4))
         elif len(box_1) == 0:
@@ -64,17 +64,17 @@ class Transform():
             for i in distances:
                 if i[0] < threshold:
                     if i[1] in index_not_used_points_1 and i[2] in index_not_used_points_2:
-                        joined_point = np.array([(box_1[int(i[1]),0]+box_2[int(i[2]),0]) / 2 ,(box_1[int(i[1]),1]+box_2[int(i[2]),1]) / 2 ,20 ,20])
+                        joined_point = np.array([(box_1[int(i[1]),0]+box_2[int(i[2]),0]) / 2 ,(box_1[int(i[1]),1]+box_2[int(i[2]),1]) / 2 ,w_car ,h_car])
                         join = np.append(join,[joined_point],axis=0)              
                         index_not_used_points_1.remove(int(i[1]))
                         index_not_used_points_2.remove(int(i[2]))     
 
             for j in index_not_used_points_1:
-                p1 = np.array([box_1.item(j,0),box_1.item(j,1),20,20])
+                p1 = np.array([box_1.item(j,0),box_1.item(j,1),w_car,h_car])
                 join = np.append(join,[p1],axis=0)       
 
             for k in index_not_used_points_2:
-                p2 = np.array([box_2.item(k,0),box_2.item(k,1),20,20])
+                p2 = np.array([box_2.item(k,0),box_2.item(k,1),w_car,h_car])
                 join = np.append(join,[p2],axis=0)
             join = np.int32(join)
         return join

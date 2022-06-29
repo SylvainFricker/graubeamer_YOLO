@@ -340,7 +340,7 @@ def run_yolo():
 
         # Merge boxes
         #Iou for transformed bboxes
-        combined_bboxes = Transform.selected_join(transformed_bboxes_1 ,transformed_bboxes_2 ,combining_bboxes_threshold ,large_bbox_threshold ,combining_margin_for_large_bboxes, bbox_scale)
+        combined_bboxes = Transform.selected_join(transformed_bboxes_1 ,transformed_bboxes_2 ,100, w_car , h_car)
         len_combined_bboxes = len(combined_bboxes)
         combined_confidences = Transform.combine_confidences2(len_combined_bboxes) #set to 0.8 by default
         combined_class_ids = Transform.combine_class_ids(len_combined_bboxes)
