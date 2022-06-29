@@ -79,7 +79,13 @@ class Transform():
         return output
 
     # new function
-    def perspective_transform_bbox(bboxes, M, bbox_scale):
+    def perspective_transform_bbox(bboxes, M, w_car, h_car):
+
+        one_bbox = False
+        if len(bboxes.shape) == 1:
+            one_bbox = True
+            bboxes = bboxes[None, :]
+
         transformed_bboxes = []
 
         for bbox in bboxes:
@@ -96,16 +102,14 @@ class Transform():
 
             transformed_centroid = Transform_Point(M, centroid)
             
-            
-
-            #fixed width and height for cars, in relation to plane size
-            w_car, h_car = 20, 40
-            
             # safe box as lower left corner and width / height: [x,y,w,h]
             transformed_bbox = [int(transformed_centroid[0][0][0] - w_car/2),int(transformed_centroid[0][0][1] - h_car/2),int(w_car),int(h_car)]
             transformed_bboxes.append(transformed_bbox)
    
         transformed_bboxes = np.array(transformed_bboxes)
+
+        if one_bbox:
+            transformed_bboxes = transformed_bboxes.flatten()
 
         return transformed_bboxes
 
