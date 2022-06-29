@@ -181,6 +181,9 @@ frame_size = (640, 360)
 plane_size_davos = [500,800,3]
 plane_size_parpan = [500,800,3]
 
+#fixed width and height for cars, in relation to plane size
+w_car, h_car = 20, 40
+
 """Initialize projection planes, one with all boxes, one with merged boxes only"""
 white_plane_1 = np.zeros(plane_size_davos, dtype=np.uint8)
 white_plane_1.fill(255)
