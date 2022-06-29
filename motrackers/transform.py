@@ -79,8 +79,18 @@ class Transform():
             join = np.int32(join)
         return join
 
+    def correct_centroid(centroid, im_h, im_w):
+        # make factor dynamic, the farther away, the less the factor
+        factor = 0.95
+        ref = [im_w/2, im_h]
+        dist = abs(distance.euclidean(ref, centroid))
+        angle = math.atan2(ref[1] - centroid[1], centroid[0] - ref[0])
+        new_centroid_x = int(ref[0] + math.cos(angle) * dist * factor)
+        new_centroid_y = int(ref[1] - math.sin(angle) * dist * factor)
+        return [new_centroid_x, new_centroid_y]
+
     # new function
-    def perspective_transform_bbox(bboxes, M, w_car, h_car):
+    def perspective_transform_bbox(bboxes, M, w_car, h_car, im_w, im_h):
 
         one_bbox = False
         if len(bboxes.shape) == 1:
@@ -100,11 +110,12 @@ class Transform():
             #bbox in y direction 1080-->800 == 1.35
             
             """ correct for offsets here"""
+            corr_centroid = Transform.correct_centroid(centroid, im_w, im_h)
 
-            transformed_centroid = Transform_Point(M, centroid)
+            transformed_centroid = Transform_Point(M, corr_centroid)
             
             # safe box as lower left corner and width / height: [x,y,w,h]
-            transformed_bbox = [int(transformed_centroid[0][0][0] - w_car/2),int(transformed_centroid[0][0][1] - h_car/2),int(w_car),int(h_car)]
+            transformed_bbox = [int(transformed_centroid[0][0][0] - w_car/2), int(transformed_centroid[0][0][1] - h_car/2), w_car, h_car]
             transformed_bboxes.append(transformed_bbox)
    
         transformed_bboxes = np.array(transformed_bboxes)
@@ -213,15 +224,7 @@ class Transform():
 
         return transformed_bboxes, plane
 
-    def correct_centroid(centroid, im_h, im_w):
-        # make factor dynamic, the farther away, the less the factor
-        factor = 0.95
-        ref = [im_w/2, im_h]
-        dist = abs(distance.euclidean(ref, centroid))
-        angle = math.atan2(ref[1] - centroid[1], centroid[0] - ref[0])
-        new_centroid_x = int(ref[0] + math.cos(angle) * dist * factor)
-        new_centroid_y = int(ref[1] - math.sin(angle) * dist * factor)
-        return [new_centroid_x, new_centroid_y]
+    
 
     """
     def selected_join(box_1,box_2, threshold = 100, large_bbox_threshold = 50, margin = 0.5 ,bbox_scale = 1):

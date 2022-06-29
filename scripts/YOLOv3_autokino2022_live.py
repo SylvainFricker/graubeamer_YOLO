@@ -240,7 +240,7 @@ def run_yolo():
 
         #transformed_bboxes_1 = Transform.get_all4points_bboxes_transformed_with_bbox_scale(white_plane_1.copy(), bboxes_1, M1, bbox_scale)
         transformed_bboxes_1, plane = Transform.get_all4points_bboxes_transformed_with_bbox_scale(white_plane_1.copy(), bboxes_1, M1, bbox_scale, image_1)
-        #transformed_bboxes_1 = Transform.perspective_transform_bbox(bboxes_1, M1, bbox_scale )
+        transformed_bboxes_1 = Transform.perspective_transform_bbox(bboxes_1, M1, w_car, h_car, frame_size[0], frame_size[1])
 
         white_plane_detections = Helper.draw_bboxes_red(white_plane_1.copy(), transformed_bboxes_1)
         #white_plane_detections = Helper.draw_centroid_bboxes_red(white_plane_detections, transformed_bboxes_1)
