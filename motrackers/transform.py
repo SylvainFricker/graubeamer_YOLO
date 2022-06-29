@@ -6,6 +6,7 @@ import matplotlib.path as mplPath
 import itertools
 from scipy.spatial import distance
 from scipy import spatial
+from scipy.optimize import linear_sum_assignment
 from motrackers.utils import get_PerspectiveMatrix
 from motrackers.utils import Transform_Point
 from motrackers.utils.misc import get_corners_of_ROI_as_int
@@ -34,8 +35,18 @@ class Transform():
             combined_class_ids[i] = 2
         return combined_class_ids
 
+    def correct_centroid(centroid, im_h, im_w, base_corr, factor, max_dist):
+        ref = [im_w/2, im_h]
+        dist = abs(distance.euclidean(ref, centroid))
+        #dist_corr = dist * (0.9 + factor * dist / max_dist)
+        dist_corr = dist - (base_corr - dist / max_dist * factor)
+        angle = math.atan2(ref[1] - centroid[1], centroid[0] - ref[0])
+        new_centroid_x = int(ref[0] + math.cos(angle) * dist_corr)
+        new_centroid_y = int(ref[1] - math.sin(angle) * dist_corr)
+        return [new_centroid_x, new_centroid_y]
+        
     #IN USE
-    def selected_join(box_1,box_2, threshold = 300, w_car, h_car):
+    def selected_join(box_1,box_2, w_car, h_car, threshold = 100):
         if len(box_1) == 0 and len(box_2) == 0:
             return np.empty((0,4))
         elif len(box_1) == 0:
@@ -77,17 +88,64 @@ class Transform():
                 p2 = np.array([box_2.item(k,0),box_2.item(k,1),w_car,h_car])
                 join = np.append(join,[p2],axis=0)
             join = np.int32(join)
-        return join
+            return join
 
-    def correct_centroid(centroid, im_h, im_w, base_corr, factor, max_dist):
-        ref = [im_w/2, im_h]
-        dist = abs(distance.euclidean(ref, centroid))
-        #dist_corr = dist * (0.9 + factor * dist / max_dist)
-        dist_corr = dist - (base_corr - dist / max_dist * factor)
-        angle = math.atan2(ref[1] - centroid[1], centroid[0] - ref[0])
-        new_centroid_x = int(ref[0] + math.cos(angle) * dist_corr)
-        new_centroid_y = int(ref[1] - math.sin(angle) * dist_corr)
-        return [new_centroid_x, new_centroid_y]
+    def selected_join_optimized(box_1,box_2, w_car, h_car, threshold = 100): 
+        if len(box_1) == 0 and len(box_2) == 0:
+            return np.empty((0,4))
+        elif len(box_1) == 0:
+            return box_2
+        elif len(box_2) == 0:
+            return box_1
+        else:
+            box_1 = box_1[0:,0:2]
+            box_2 = box_2[0:,0:2]
+            join = np.empty((0,4))
+            
+            distances = distance.cdist(box_1, box_2)
+            distances[distances<0] = 0
+            assigned_boxes_1, assigned_boxes_2 = linear_sum_assignment(distances)
+            cost_matrix = distances[assigned_boxes_1, assigned_boxes_2].sum()
+            index_unmatched_boxes_2, index_unmatched_boxes_1 = [], []
+
+            for d in range(box_2.shape[0]):
+                if d not in assigned_boxes_2:
+                    index_unmatched_boxes_2.append(d)
+
+            for t in range(box_1.shape[0]):
+                if t not in assigned_boxes_1:
+                    index_unmatched_boxes_1.append(t)
+            index_matches = []
+
+            for t, d in zip(assigned_boxes_1, assigned_boxes_2):
+                if distances[t, d] > threshold:
+                    index_unmatched_boxes_1.append(t)
+                    index_unmatched_boxes_2.append(d)
+                else:
+                    index_matches.append((t, d))
+            
+            if len(index_matches):
+                index_matches = np.array(index_matches)
+            else:
+                index_matches = np.empty((0, 2), dtype=int)                  
+            index_unmatched_boxes_1 = np.array(index_unmatched_boxes_1)
+            index_unmatched_boxes_2 = np.array(index_unmatched_boxes_2)
+            index_matches = np.array(index_matches)
+          
+            for pair in index_matches:
+                joined_point = np.array([(box_1[pair[0],0]+box_2[pair[1],0]) / 2 ,(box_1[pair[0],1]+box_2[pair[1],1]) / 2 ,w_car ,h_car])
+                join = np.append(join,[joined_point],axis=0)
+                               
+            for j in index_unmatched_boxes_1:
+                p1 = np.array([box_1.item(j,0),box_1.item(j,1),w_car ,h_car])
+                join = np.append(join,[p1],axis=0)
+                
+            for k in index_unmatched_boxes_2:
+                p2 = np.array([box_2.item(k,0),box_2.item(k,1),w_car ,h_car])
+                join = np.append(join,[p2],axis=0)
+
+            join = np.int32(join)
+            return join
 
     # new function
     def perspective_transform_bbox(bboxes, M, w_car, h_car, im_w, im_h):
