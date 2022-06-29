@@ -43,7 +43,8 @@ cap_2 = cv.VideoCapture('http://graubeamer:Autokino22@{}/cgi-bin/mjpeg?stream=[1
 Size Settings
 """
 # size of captured image, check camera pixels, should be 1280/720
-frame_size = (640, 360)
+frame_width, frame_height = 640, 360
+frame_size = (frame_width, frame_height)
 
 # Size of parking lot
 plane_size_davos = [500,800,3]
@@ -57,6 +58,15 @@ white_plane_1 = np.zeros(plane_size_davos, dtype=np.uint8)
 white_plane_1.fill(255)
 white_plane_2 = np.zeros(plane_size_davos, dtype=np.uint8)
 white_plane_2.fill(255)
+
+"""
+parameters for centroid transformation
+"""
+# max distance in pixels to reference (bottom centre)
+max_dist = np.sqrt((frame_width/2)**2 + frame_height**2)
+# correction factor for centroid
+factor_centroid = 0.1
+base_corr_centroid = 20
 
 """
 important parameters for combining boxes
@@ -240,7 +250,7 @@ def run_yolo():
 
         #transformed_bboxes_1 = Transform.get_all4points_bboxes_transformed_with_bbox_scale(white_plane_1.copy(), bboxes_1, M1, bbox_scale)
         transformed_bboxes_1, plane = Transform.get_all4points_bboxes_transformed_with_bbox_scale(white_plane_1.copy(), bboxes_1, M1, bbox_scale, image_1)
-        transformed_bboxes_1 = Transform.perspective_transform_bbox(bboxes_1, M1, w_car, h_car, frame_size[0], frame_size[1])
+        transformed_bboxes_1 = Transform.perspective_transform_bbox(bboxes_1, M1, w_car, h_car, frame_width, frame_height)
 
         white_plane_detections = Helper.draw_bboxes_red(white_plane_1.copy(), transformed_bboxes_1)
         #white_plane_detections = Helper.draw_centroid_bboxes_red(white_plane_detections, transformed_bboxes_1)
@@ -278,13 +288,9 @@ def run_yolo():
 
         #Traking on combined BBoxes
         combined_white_plane = model.draw_bboxes(white_plane_2.copy(), combined_bboxes, combined_confidences, combined_class_ids)
-
-        #cv.imshow("iii",combined_white_plane)
-
-        if args.tracker == 'CentroidTracker':
-            tracks = tracker.update(combined_bboxes, combined_confidences, combined_class_ids)
-        elif args.tracker == 'CentroidKF_Tracker':
-            tracks, combined_white_plane = tracker.update_with_predictions(combined_bboxes, combined_confidences, combined_class_ids,combined_white_plane)
+        
+        tracks = tracker.update(combined_bboxes, combined_confidences, combined_class_ids)
+        #tracks, combined_white_plane = tracker.update_with_predictions(combined_bboxes, combined_confidences, combined_class_ids,combined_white_plane)
 
         #without showing prediction
         combined_white_plane_and_track = draw_tracks(combined_white_plane, tracks)

@@ -79,14 +79,14 @@ class Transform():
             join = np.int32(join)
         return join
 
-    def correct_centroid(centroid, im_h, im_w):
-        # make factor dynamic, the farther away, the less the factor
-        factor = 0.95
+    def correct_centroid(centroid, im_h, im_w, base_corr, factor, max_dist):
         ref = [im_w/2, im_h]
         dist = abs(distance.euclidean(ref, centroid))
+        #dist_corr = dist * (0.9 + factor * dist / max_dist)
+        dist_corr = dist - (base_corr - dist / max_dist * factor)
         angle = math.atan2(ref[1] - centroid[1], centroid[0] - ref[0])
-        new_centroid_x = int(ref[0] + math.cos(angle) * dist * factor)
-        new_centroid_y = int(ref[1] - math.sin(angle) * dist * factor)
+        new_centroid_x = int(ref[0] + math.cos(angle) * dist_corr)
+        new_centroid_y = int(ref[1] - math.sin(angle) * dist_corr)
         return [new_centroid_x, new_centroid_y]
 
     # new function
