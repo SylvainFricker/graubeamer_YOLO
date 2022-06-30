@@ -1,5 +1,7 @@
+import imp
 import time
 import cv2 as cv
+import numpy as np
 
 """Class with helper functions"""
 class Helper():
@@ -22,6 +24,27 @@ class Helper():
                     break
 
                 return image_1, image_2
+    
+    # set confidence for tracker
+    def combine_confidences(len):
+        combined_confidence = np.empty(len)
+        for i in range(len):
+            combined_confidence[i] = 0.8
+        return combined_confidence
+
+    # set class IDs for tracker
+    def combine_class_ids(len):
+        combined_class_ids = np.empty(len)
+        for i in range(len):
+            combined_class_ids[i] = 2
+        return combined_class_ids
+
+    def corners_to_points(corners):
+        p1 = np.array([corners[0,0],corners[0,1]])
+        p2 = np.array([corners[1,0],corners[1,1]])
+        p3 = np.array([corners[2,0],corners[2,1]])
+        p4 = np.array([corners[3,0],corners[3,1]])
+        return p1,p2,p3,p4
 
     # put text on image
     def put_Text_red(image):
@@ -44,6 +67,14 @@ class Helper():
             0.7, (120, 255, 2), 2)
         cv.putText(image,'if you selected more then 4 restart the programm',(2,160), cv.FONT_HERSHEY_SIMPLEX,
             0.5, (120, 255, 2), 2)
+        return image
+
+    # draw projection plane bounds on white plane
+    def draw_plane_bounds(image, padding):
+        upper_left = (padding, padding)
+        lower_right = (int(image.shape[1] - padding), int(image.shape[0] - padding))
+        color = (0, 0, 0) #black
+        cv.rectangle(image, upper_left, lower_right, color, 4 )
         return image
 
     # draw points on images

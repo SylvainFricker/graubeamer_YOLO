@@ -10,89 +10,61 @@ import time
 from motrackers.detectors import YOLO_v3_pimped
 from motrackers import CentroidTracker, CentroidKF_Tracker
 from motrackers.utils import draw_tracks
-from motrackers.utils import corners_to_points
-from motrackers.utils import get_PerspectiveMatrix
 from motrackers import Transform
 from motrackers import Helper
 
-import argparse
 
-parser = argparse.ArgumentParser(
-    description='Object detections in input video using YOLOv3 trained on COCO dataset.'
-)
+"""
+Settings
+"""
+weights = "./../pretrained_models/yolo_weights/yolov3.weights"
+configs = "./../pretrained_models/yolo_weights/yolov3.cfg"
+labels = "./../pretrained_models/yolo_weights/coco_names.json"
+video_out = "./../video_output/liveDavos_130722.avi"
+# Tracker max_lost: after how many "fail to assign detection to track" the track is deleted
+tracker = CentroidTracker(max_lost=20, tracker_output_format='mot_challenge')
+#tracker = CentroidKF_Tracker(max_lost=20, tracker_output_format='mot_challenge')
+isgpu = False
 
-parser.add_argument(
-    '--live', type=str, default="True", help='live video stream or recorded video input'
-)
-parser.add_argument(
-    '--video1', '-v', type=str, default="./../video_input/alvaneu_1.1_4fps.mp4", help='Input video path.'
-)
+islive =  False
 
-parser.add_argument(
-    '--video2', '-vv', type=str, default="./../video_input/alvaneu_1.2_4fps.mp4", help='Input video path.'
-)
+"""
+Size Settings
+"""
+# size of captured image, check camera pixels, should be 1280/720
+frame_width, frame_height = 640, 360
+frame_size = (frame_width, frame_height)
 
-parser.add_argument(
-    '--output', '-o', type=str, default="./../video_output/prediction.avi", help='Output video path.'
-)
+# Size of parking lot: length, width, rgb
+padding = 50
+length_davos, width_davos = 400, 500
+plane_size_davos = [length_davos + 2*padding, width_davos + 2*padding,3]
+length_parpan, width_parpan = 800, 500
+plane_size_parpan = [length_parpan + 2*padding, width_parpan + 2*padding,3]
 
-parser.add_argument(
-    '--weights', '-w', type=str,
-    default="./../pretrained_models/yolo_weights/yolov3.weights",
-    help='path to weights file of YOLOv3 (`.weights` file.)'
-)
+#fixed width and height for cars, in relation to plane size
+w_car, h_car = 20, 40
 
-parser.add_argument(
-    '--config', '-c', type=str,
-    default="./../pretrained_models/yolo_weights/yolov3.cfg",
-    help='path to config file of YOLOv3 (`.cfg` file.)'
-)
+#Initialize projection planes, one with all boxes, one with merged boxes only
+white_plane_detections = np.ones(plane_size_davos, dtype=np.uint8) * 255
+white_plane_merged = np.ones(plane_size_davos, dtype=np.uint8) * 255
 
-parser.add_argument(
-    '--labels', '-l', type=str,
-    default="./../pretrained_models/yolo_weights/coco_names.json",
-    help='path to labels file of coco dataset (`.names` file.)'
-)
 
-parser.add_argument(
-    '--gpu', type=bool,
-    default=False, help='Flag to use gpu to run the deep learning model. Default is `False`'
-)
-
-parser.add_argument(
-    '--tracker', type=str, default='CentroidTracker',
-    help="Tracker used to track objects. Options include ['CentroidTracker', 'CentroidKF_Tracker']"
-)
-
-args = parser.parse_args()
-
-"""max_lost: after how many "fail to assign detection to track" the track is deleted"""
-
-if args.tracker == 'CentroidTracker':
-    tracker = CentroidTracker(max_lost=20, tracker_output_format='mot_challenge')
-elif args.tracker == 'CentroidKF_Tracker':
-    tracker = CentroidKF_Tracker(max_lost=20, tracker_output_format='mot_challenge')
-
-else:
-    raise NotImplementedError
-
-islive = args.live == "True"
+"""
+parameters for centroid transformation
+"""
+# max distance in pixels to reference (bottom centre)
+max_dist_centroid = np.sqrt((frame_width/2)**2 + frame_height**2)
+# correction factor for centroid
+factor_centroid = 20
+# base correction for centroid
+base_corr_centroid = 15
 
 """
 important parameters for combining boxes
 """
-
 # threshold when 2 detections of the two cameras is evaluated as one car (pixel)
-combining_bboxes_threshold = 100
-
-#which bboxes are trated as large (whith or hight)
-large_bbox_threshold = 50
-
-# increases the threshold(combining_bboxes_threshold) for large bboxes (independant of bbox_scale)
-combining_margin_for_large_bboxes = 0.1
-
-#scaling of bboxes
-bbox_scale = 0.4
+combining_centroids_dist_threshold = 100
 
 """
 streaming
@@ -145,13 +117,13 @@ params:
 """
 
 model = YOLO_v3_pimped(
-    weights_path=args.weights,
-    configfile_path=args.config,
-    labels_path=args.labels,
-    confidence_threshold=0.4,
-    nms_threshold=0.2,
-    draw_bboxes=True,
-    use_gpu=args.gpu
+    weights_path = weights,
+    configfile_path = configs,
+    labels_path = labels,
+    confidence_threshold = 0.4,
+    nms_threshold = 0.2,
+    draw_bboxes = True,
+    use_gpu = isgpu
 )
 
 """ Video Capture Settings"""
@@ -165,30 +137,13 @@ if islive:
 
 #for videos
 else:
-    video_path_1 = args.video1
-    video_path_2 = args.video2
+    #video_path_1 = "./../video_input/alvaneu2_3.1.mp4"
+    #video_path_2 = "./../video_input/alvaneu2_3.2.mp4"
+    video_path_1 = "./../video_input/alvaneu_1.1_4fps.mp4"
+    video_path_2 = "./../video_input/alvaneu_1.2_4fps.mp4"
     cap_1 = cv.VideoCapture(video_path_1)
     cap_2 = cv.VideoCapture(video_path_2)
 
-#buffer size does not work
-#cap_1.set(cv.CAP_PROP_BUFFERSIZE, 1)
-#cap_2.set(cv.CAP_PROP_BUFFERSIZE, 1)
-
-# size of captured image, check camera pixels, should be 1280/720
-frame_size = (640, 360)
-
-# Size of parking lot
-plane_size_davos = [500,800,3]
-plane_size_parpan = [500,800,3]
-
-#fixed width and height for cars, in relation to plane size
-w_car, h_car = 20, 40
-
-"""Initialize projection planes, one with all boxes, one with merged boxes only"""
-white_plane_1 = np.zeros(plane_size_davos, dtype=np.uint8)
-white_plane_1.fill(255)
-white_plane_2 = np.zeros(plane_size_davos, dtype=np.uint8)
-white_plane_2.fill(255)
 
 """
 Define Area of Intrest for both cameras 
@@ -258,13 +213,13 @@ click_corners_1 = np.array([[245, 203],
        [525, 229],
        [ 77, 236],
        [486, 302]])
-ul_1,ur_1,ll_1,lr_1 = corners_to_points(click_corners_1)
+ul_1,ur_1,ll_1,lr_1 = Helper.corners_to_points(click_corners_1)
 click_corners_2 = np.array([[113, 224],
        [404, 219],
        [126, 296],
        [570, 266]])
 #upper left, upper right, lower left, lower right
-ul_2,ur_2,ll_2,lr_2 = corners_to_points(click_corners_2)
+ul_2,ur_2,ll_2,lr_2 = Helper.corners_to_points(click_corners_2)
 print("points_2",ul_2,ur_2,ll_2,lr_2)
 
 if islive:
@@ -276,14 +231,19 @@ if islive:
     cap_2 = cv.VideoCapture('http://graubeamer:Autokino22@{}/cgi-bin/mjpeg?stream=[1]'.format(camera_IP2))
 
 """Perspective Transformation Matrices"""
-M1 = get_PerspectiveMatrix(ul_1,ur_1,ll_1,lr_1) #why not dependent on plane?
-M2 = get_PerspectiveMatrix(ul_2,ur_2,ll_2,lr_2)
+M1 = Transform.get_PerspectiveMatrix(ul_1,ur_1,ll_1,lr_1, plane_size_davos[1], plane_size_davos[0], padding) 
+M2 = Transform.get_PerspectiveMatrix(ul_2,ur_2,ll_2,lr_2, plane_size_davos[1], plane_size_davos[0], padding)
 
 """Run Yolo Algorithm"""
 def run_yolo():
-    global cap_1, cap_2, outputFrame, lock
+    global outputFrame, lock
+    
     # saving video
-    writer = None
+    fourcc = cv.VideoWriter_fourcc(*"MJPG")
+    writer = cv.VideoWriter(video_out, fourcc, 2, (plane_size_davos[1], plane_size_davos[0]), True)
+
+    # timing
+    starttime = time.perf_counter()
 
     #start Detecting
     while True:
@@ -306,78 +266,75 @@ def run_yolo():
             centroid_x = int(box[0] + box[2]/2) 
             centroid_y = int(box[1] + box[3]/2)
             cv.circle(image_1, (centroid_x, centroid_y), 4, (0, 255, 0), -1)
-            new_centroid = Transform.correct_centroid([centroid_x, centroid_y], image_1.shape[0], image_1.shape[1])
+            new_centroid = Transform.correct_centroid([centroid_x, centroid_y], frame_width, frame_height, factor_centroid, base_corr_centroid, max_dist_centroid)
             cv.circle(image_1, (new_centroid[0], new_centroid[1]), 4, (0, 0, 255), -1)
         image_1 = Helper.draw_points_red(image_1,click_corners_1)
-        cv.imshow("updated image 1", image_1)
+        cv.imshow("Image 1 with corrected centroids", image_1)
 
-        #transformed_bboxes_1 = Transform.get_all4points_bboxes_transformed_with_bbox_scale(white_plane_1.copy(), bboxes_1, M1, bbox_scale)
-        transformed_bboxes_1, plane = Transform.get_all4points_bboxes_transformed_with_bbox_scale(white_plane_1.copy(), bboxes_1, M1, bbox_scale, image_1)
-        #transformed_bboxes_1 = Transform.perspective_transform_bbox(bboxes_1, M1, bbox_scale )
+        # reset white plane and draw bboxes from camera 1
+        white_plane_detections = np.ones(plane_size_davos, dtype=np.uint8) * 255
+        white_plane_detections = Helper.draw_plane_bounds(white_plane_detections, padding)
+        transformed_bboxes_1, plane = Transform.perspective_transform_bbox_draw(white_plane_detections.copy(), bboxes_1, M1, w_car, h_car, frame_width, frame_height, factor_centroid, base_corr_centroid, max_dist_centroid)
+        #transformed_bboxes_1 = Transform.perspective_transform_bbox(bboxes_1, M1, w_car, h_car, frame_width, frame_height, factor_centroid, base_corr_centroid, max_dist_centroid)
 
-        white_plane_detections = Helper.draw_bboxes_red(white_plane_1.copy(), transformed_bboxes_1)
-        #white_plane_detections = Helper.draw_centroid_bboxes_red(white_plane_detections, transformed_bboxes_1)
-
-
+        white_plane_detections = Helper.draw_bboxes_red(white_plane_detections, transformed_bboxes_1)
+        
         #detection on image_2
         bboxes_2, confidences_2, class_ids_2 = model.detect(image_2,click_corners_2)
-
         image_2 = model.draw_bboxes(image_2, bboxes_2, confidences_2, class_ids_2)
         #testing centroid shifting
         for box in bboxes_2:
             centroid_x = int(box[0] + box[2]/2) 
             centroid_y = int(box[1] + box[3]/2)
             cv.circle(image_2, (centroid_x, centroid_y), 4, (0, 255, 0), -1)
-            new_centroid = Transform.correct_centroid([centroid_x, centroid_y], image_2.shape[0], image_2.shape[1])
+            new_centroid = Transform.correct_centroid([centroid_x, centroid_y], frame_width, frame_height, factor_centroid, base_corr_centroid, max_dist_centroid)
             cv.circle(image_2, (new_centroid[0], new_centroid[1]), 4, (0, 0, 255), -1)
         image_2 = Helper.draw_points_green(image_2,click_corners_2)
-        cv.imshow("updated image 2", image_2)
+        cv.imshow("Image 2 with corrected centroids", image_2)
 
-        #transformed_bboxes_2 = Transform.get_all4points_bboxes_transformed_with_bbox_scale(white_plane_2.copy() ,bboxes_2 ,M2 ,bbox_scale)
-        transformed_bboxes_2, plane = Transform.get_all4points_bboxes_transformed_with_bbox_scale(plane ,bboxes_2 ,M2 ,bbox_scale, image_2)
-        #transformed_bboxes_2 = Transform.perspective_transform_bbox(bboxes_2, M2, image_2.shape[0], image_2.shape[1])
+        transformed_bboxes_2, _ = Transform.perspective_transform_bbox_draw(plane ,bboxes_2 , M2, w_car, h_car, frame_width, frame_height, factor_centroid, base_corr_centroid, max_dist_centroid)
+        #transformed_bboxes_2 = Transform.perspective_transform_bbox(bboxes_2, M2, w_car, h_car, frame_width, frame_height, factor_centroid, base_corr_centroid, max_dist_centroid)
 
         #white_plane_detections = Helper.draw_centroid_bboxes_green(white_plane_detections,transformed_bboxes_2)  
         white_plane_detections = Helper.draw_bboxes_green(white_plane_detections,transformed_bboxes_2) 
-        cv.imshow("white_plane_detections",white_plane_detections)
+        cv.imshow("Projected Detections", white_plane_detections)
 
-        # Merge boxes
-        #Iou for transformed bboxes
-        combined_bboxes = Transform.selected_join(transformed_bboxes_1 ,transformed_bboxes_2, w_car, h_car, 100)
-        len_combined_bboxes = len(combined_bboxes)
-        combined_confidences = Transform.combine_confidences2(len_combined_bboxes) #set to 0.8 by default
-        combined_class_ids = Transform.combine_class_ids(len_combined_bboxes)
+       ## Merge bboxes
+        # Greedy strategy
+        combined_bboxes = Transform.selected_join(transformed_bboxes_1 ,transformed_bboxes_2, w_car, h_car, combining_centroids_dist_threshold)
+        # Optimization strategy
+        #combined_bboxes = Transform.selected_join_optimized(transformed_bboxes_1 ,transformed_bboxes_2, w_car, h_car, combining_centroids_dist_threshold)
         
+        # Define confidence and class for tracker
+        len_combined_bboxes = len(combined_bboxes)
+        combined_confidences = Helper.combine_confidences(len_combined_bboxes) #set to 0.8 by default
+        combined_class_ids = Helper.combine_class_ids(len_combined_bboxes)
 
         #Traking on combined BBoxes
-        combined_white_plane = model.draw_bboxes(white_plane_2.copy(), combined_bboxes, combined_confidences, combined_class_ids)
-
-        #cv.imshow("iii",combined_white_plane)
-
-        if args.tracker == 'CentroidTracker':
-            tracks = tracker.update(combined_bboxes, combined_confidences, combined_class_ids)
-        elif args.tracker == 'CentroidKF_Tracker':
-            tracks, combined_white_plane = tracker.update_with_predictions(combined_bboxes, combined_confidences, combined_class_ids,combined_white_plane)
+        white_plane_merged = np.ones(plane_size_davos, dtype=np.uint8) * 255
+        white_plane_merged = Helper.draw_plane_bounds(white_plane_merged, padding)
+        white_plane_merged = model.draw_bboxes(white_plane_merged, combined_bboxes, combined_confidences, combined_class_ids)
+    
+        tracks = tracker.update(combined_bboxes, combined_confidences, combined_class_ids)
+        #tracks, combined_white_plane = tracker.update_with_predictions(combined_bboxes, combined_confidences, combined_class_ids,combined_white_plane)
 
         #without showing prediction
-        combined_white_plane_and_track = draw_tracks(combined_white_plane, tracks)
-        cv.imshow("combined_white_plane_and_track",combined_white_plane_and_track)            
+        white_plane_merged_tracked = draw_tracks(white_plane_merged, tracks)
+        cv.imshow("Tracked Merged Detections", white_plane_merged_tracked)            
         
-        if cv.waitKey(1) & 0xFF == ord('q'):
-            break
-
-        if writer is None:
-            fourcc = cv.VideoWriter_fourcc(*"MJPG")
-            writer = cv.VideoWriter(args.output, fourcc, 2,
-                (combined_white_plane_and_track.shape[1], combined_white_plane_and_track.shape[0]), True)
-
-        writer.write(combined_white_plane_and_track)
-        print("############################################################################################")
-        
-        # acquire the lock, set the output frame, and release the
-		# lock
+        writer.write(white_plane_merged_tracked)
+        print("####################################### \n")
+                
+        # acquire the lock, set the output frame, and release the lock
         with lock:
-            outputFrame = combined_white_plane_and_track.copy()  
+            outputFrame = white_plane_merged_tracked 
+
+        endtime = time.perf_counter()
+        print(f"Image processing time: {endtime - starttime} s \n")
+        starttime = endtime
+
+        if cv.waitKey(1) & 0xFF == ord('q'):
+            break  
     
     writer.release()
 

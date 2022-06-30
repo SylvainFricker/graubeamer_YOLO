@@ -304,46 +304,14 @@ if __name__ == '__main__':
         }
     dict2jsonfile(data, '../../examples/pretrained_models/caffemodel_weights/ssd_mobilenet_caffe_names.json')
 
-
-def get_PerspectiveMatrix(p1,p2,p3,p4):
-    corners = np.float32([p1,p2,p3,p4])
-    #pts2 = np.float32([[50,50],[850,50],[50,550],[850,550]])
-    #pts2 = np.float32([[0,0],[800,0],[0,500],[800,500]])
-    # Adapt to plane size
-    pts2 = np.float32([[50,50],[650,50],[50,350],[650,350]])
-    #pts2 = np.float32([[0,0],[800,0],[0,400],[800,400]])
-    M = cv.getPerspectiveTransform(corners,pts2)
-    return M
-
-
+"""
 def get_AffineTransformMatrix(p1,p2,p3):
     srcTri = np.float32([p3, p1, p3])
     dstTri = np.float32( [[0,0], [800, 0], [0,800]])
     M = cv.getAffineTransform(srcTri, dstTri)
     return M
 
-
-'''
-def Transform_Point(M , point):
-    x = point[0]
-    y = point[1]
-    z = 1
-    p = np.float32([[x],[y],[z]])
-    transformedpoint = np.matmul(M,p)
-    sub2d = transformedpoint[:-1]
-    return sub2d
-'''
-
-
-def Transform_Point(M , point):
-    x = point[0]
-    y = point[1]
-    pts = np.array([[x,y]], dtype = "float32")    
-    pts = np.array([pts])
-    transformed_point = cv.perspectiveTransform(pts,M)
-    return transformed_point
-
-
+"""
 def get_corners_of_ROI_as_int():
     #full picture
     #rl,ll,rt,lt = np.int32([20,20]) , np.int32([1380,20]) , np.int32([20,980]) , np.int32([1380,980])
@@ -375,12 +343,7 @@ def check_if_detection_in_ROI_v2(x,y,corners):
     return bbPath.contains_point((x,y))
 
 
-def corners_to_points(corners):
-    p1 = np.array([corners[0,0],corners[0,1]])
-    p2 = np.array([corners[1,0],corners[1,1]])
-    p3 = np.array([corners[2,0],corners[2,1]])
-    p4 = np.array([corners[3,0],corners[3,1]])
-    return p1,p2,p3,p4
+
 
 
 
