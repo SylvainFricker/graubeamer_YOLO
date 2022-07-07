@@ -85,7 +85,7 @@ streaming
 outputFrame = None
 lock = threading.Lock()
 # initialize a flask object
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates', static_folder='styling')
 
 @app.route("/")
 def index():

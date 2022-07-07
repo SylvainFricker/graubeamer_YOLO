@@ -1,9 +1,10 @@
 <html>
   <head>
-    <title>graubeamer live</title>
+    <title>graubeamer livestream</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename = 'style.css') }}">
   </head>
   <body>
-    <h1>graubeamer live</h1>
+    <h1>graubeamer livestream</h1>
     <img src="{{ url_for('video_feed') }}">
   </body>
 </html>

@@ -20,7 +20,7 @@ Settings
 weights = "./../pretrained_models/yolo_weights/yolov3.weights"
 configs = "./../pretrained_models/yolo_weights/yolov3.cfg"
 labels = "./../pretrained_models/yolo_weights/coco_names.json"
-video_out = "./../video_output/liveDavos_130722.avi"
+video_out = "./../video_output/liveDavos_130722_test.avi"
 # Tracker max_lost: after how many "fail to assign detection to track" the track is deleted
 tracker = CentroidTracker(max_lost=20, tracker_output_format='mot_challenge')
 #tracker = CentroidKF_Tracker(max_lost=20, tracker_output_format='mot_challenge')
@@ -75,7 +75,7 @@ streaming
 outputFrame = None
 lock = threading.Lock()
 # initialize a flask object
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates', static_folder='styling')
 
 @app.route("/")
 def index():
