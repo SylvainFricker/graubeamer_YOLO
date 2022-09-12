@@ -55,8 +55,8 @@ class YOLO_v3_pimped(Detector):
                 scores = detect[5:]
                 class_id = np.argmax(scores)
                 confidence = scores[class_id]
-                #if class_id == 2:
-                if True:
+                if class_id == 2:
+                #if True:
                     xmid, ymid, w, h = detect[0:4] * np.array([self.width, self.height, self.width, self.height])
                     if check_if_detection_in_ROI_v2(xmid,ymid,corners) == 1:
                         if confidence > self.confidence_threshold:

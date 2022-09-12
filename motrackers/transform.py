@@ -1,3 +1,4 @@
+import tracemalloc
 import numpy as np
 import cv2 as cv
 import math as math
@@ -138,7 +139,7 @@ class Transform():
             return join
 
     # new function
-    def perspective_transform_bbox(self, bboxes, M, w_car, h_car, im_w, im_h, factor_centroid, base_corr_centroid, max_dist_centroid):
+    def perspective_transform_bbox(bboxes, M, w_car, h_car, im_w, im_h, factor_centroid, base_corr_centroid, max_dist_centroid):
 
         one_bbox = False
         if len(bboxes.shape) == 1:
@@ -158,9 +159,9 @@ class Transform():
             #bbox in y direction 1080-->800 == 1.35
             
             """ correct for offsets here"""
-            corr_centroid = self.correct_centroid(centroid, im_w, im_h, factor_centroid, base_corr_centroid, max_dist_centroid)
+            corr_centroid = Transform.correct_centroid(centroid, im_w, im_h, factor_centroid, base_corr_centroid, max_dist_centroid)
 
-            transformed_centroid = self.transform_point(M, corr_centroid)
+            transformed_centroid = Transform.transform_point(M, corr_centroid)
             
             # safe box as lower left corner and width / height: [x,y,w,h]
             transformed_bbox = [int(transformed_centroid[0][0][0] - w_car/2), int(transformed_centroid[0][0][1] - h_car/2), w_car, h_car]

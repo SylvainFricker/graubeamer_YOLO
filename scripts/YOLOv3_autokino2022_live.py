@@ -41,18 +41,18 @@ cap_2 = cv.VideoCapture('http://graubeamer:Autokino22@{}/cgi-bin/mjpeg?stream=[1
 Size Settings
 """
 # size of captured image, check camera pixels, should be 1280/720
-frame_width, frame_height = 640, 360
+frame_width, frame_height = 2*640, 2*360
 frame_size = (frame_width, frame_height)
 
 # Size of parking lot: length, width, rgb
 padding = 50
-length_davos, width_davos = 800, 500
+length_davos, width_davos = 470, 420
 plane_size_davos = [length_davos + 2*padding, width_davos + 2*padding,3]
 length_parpan, width_parpan = 800, 500
 plane_size_parpan = [length_parpan + 2*padding, width_parpan + 2*padding,3]
 
 #fixed width and height for cars, in relation to plane size
-w_car, h_car = 20, 40
+w_car, h_car = 25, 50
 
 #Initialize projection planes, one with all boxes, one with merged boxes only
 white_plane_detections = np.ones(plane_size_davos, dtype=np.uint8) * 255

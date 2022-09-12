@@ -13,7 +13,7 @@ class Helper():
             cap_1.grab()
             cap_2.grab()
             grab_time = time.perf_counter() - starttime
-            print(f'grab_time: {grab_time}')
+            #print(f'grab_time: {grab_time}')
             # flushes buffer and returns latest image
             if grab_time > 0.1:
                 ok_1, image_1 = cap_1.retrieve()
@@ -74,7 +74,7 @@ class Helper():
         upper_left = (padding, padding)
         lower_right = (int(image.shape[1] - padding), int(image.shape[0] - padding))
         color = (0, 0, 0) #black
-        cv.rectangle(image, upper_left, lower_right, color, 4 )
+        cv.rectangle(image, upper_left, lower_right, color, 2 )
         return image
 
     # draw points on images

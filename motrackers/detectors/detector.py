@@ -98,6 +98,6 @@ class Detector:
             (label_width, label_height), baseLine = cv.getTextSize(label, cv.FONT_HERSHEY_SIMPLEX, 0.5, 2)
             y_label = max(bb[1], label_height)
             cv.rectangle(image, (bb[0], y_label - label_height), (bb[0] + label_width, y_label + baseLine),
-                         (255, 255, 255), cv.FILLED)
+                        (255, 255, 255), cv.FILLED)
             cv.putText(image, label, (bb[0], y_label), cv.FONT_HERSHEY_SIMPLEX, 0.5, clr, 2)
         return image

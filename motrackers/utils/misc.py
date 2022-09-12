@@ -264,12 +264,17 @@ def draw_tracks(image, tracks):
         width = trk[4]
         height = trk[5]
 
+        clr_box = (114, 159, 182) #"#b69f72"
+        cv.rectangle(image, (xmin, ymin), (xmin + width, ymin + height), clr_box, 2)
         xcentroid, ycentroid = int(xmin + 0.5*width), int(ymin + 0.5*height)
 
-        text = "ID {}".format(trk_id)
-
-        cv.putText(image, text, (xcentroid - 10, ycentroid - 10), cv.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 0), 2)
-        cv.circle(image, (xcentroid, ycentroid), 4, (200, 200, 0), -1)
+        #text = "ID {}".format(trk_id)
+        text = "{}".format(trk_id + 10)
+        #clr = (200, 200, 0)
+        clr = (0, 0, 0)
+        cv.putText(image, text, (xcentroid - 10 , ycentroid), cv.FONT_HERSHEY_SIMPLEX, 0.5, clr, 2)
+        #cv.putText(image, text, (xcentroid - 10, ycentroid - 10), cv.FONT_HERSHEY_SIMPLEX, 0.5, clr, 2)
+        #cv.circle(image, (xcentroid, ycentroid), 4, clr, -1)
 
     return image
 

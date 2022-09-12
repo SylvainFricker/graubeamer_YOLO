@@ -7,7 +7,7 @@ from motrackers import Transform
 
 """ Settings """
 isgpu = False
-islive = False
+islive = True
 
 
 """ streaming function """
